@@ -59,4 +59,4 @@ The Windows application is a Python-based desktop app wrapped in a standalone ex
 
 ## License
 
-[MIT](LICENSE)
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
