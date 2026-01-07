@@ -11,6 +11,10 @@ LocalDrop is a seamless cross-platform file transfer tool that enables instant s
   - **Windows**: Sleek GUI utilizing `customtkinter`.
 - **User Friendly**: Simple discovery and transfer process.
 
+## Downloads
+
+[**Download Latest Windows App**](https://github.com/0wver/LocaDrop/releases/latest)
+
 ## Android App
 
 The Android application is built with **Kotlin** and follows modern Android development practices.
