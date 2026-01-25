@@ -265,11 +265,26 @@ class App(ctk.CTk):
             # 1. Calculate Total Size and File Count
             total_size = 0
             total_files = 0
+            files_to_send = []
+            folder_basename = os.path.basename(folderpath)
+
             for root, dirs, files in os.walk(folderpath):
+                if self.network.cancel_requested: break
                 for file in files:
                     total_files += 1
-                    total_size += os.path.getsize(os.path.join(root, file))
+                    abs_path = os.path.join(root, file)
+                    file_size = os.path.getsize(abs_path)
+                    total_size += file_size
+
+                    rel_path = os.path.relpath(abs_path, folderpath)
+                    remote_filename = os.path.join(folder_basename, rel_path).replace("\\", "/")
+                    files_to_send.append((abs_path, remote_filename, file_size))
             
+            if self.network.cancel_requested:
+                 self.status_label.configure(text="Transfer Cancelled")
+                 self.hide_controls()
+                 return
+
             group_id = str(uuid.uuid4())
             
             self.current_batch_total_size = total_size
@@ -282,35 +297,25 @@ class App(ctk.CTk):
             
             files_sent = 0
             
-            folder_basename = os.path.basename(folderpath)
-            
-            for root, dirs, files in os.walk(folderpath):
+            for abs_path, remote_filename, file_size in files_to_send:
                 if self.network.cancel_requested: break
 
-                for file in files:
-                    if self.network.cancel_requested: break 
-                    
-                    abs_path = os.path.join(root, file)
-                    rel_path = os.path.relpath(abs_path, folderpath)
-                    remote_filename = os.path.join(folder_basename, rel_path).replace("\\", "/")
-                    
-                    files_sent += 1
-                    file_size = os.path.getsize(abs_path) # Get size for batch update
-                    
-                    # status_label updated by update_batch_progress usually, 
-                    # but we can set context here too if needed. 
-                    
-                    success = self.network.send_file(ip, abs_path, remote_filename=remote_filename, group_id=group_id, group_size=total_size)
-                    
-                    if success:
-                        self.current_batch_sent_base += file_size
-                    else:
-                        if self.network.cancel_requested:
-                             self.status_label.configure(text="Transfer Cancelled")
-                             self.hide_controls()
-                             self.network.on_transfer_progress = original_callback
-                             return
-                        print(f"Failed to send {remote_filename}")
+                files_sent += 1
+
+                # status_label updated by update_batch_progress usually,
+                # but we can set context here too if needed.
+
+                success = self.network.send_file(ip, abs_path, remote_filename=remote_filename, group_id=group_id, group_size=total_size)
+
+                if success:
+                    self.current_batch_sent_base += file_size
+                else:
+                    if self.network.cancel_requested:
+                            self.status_label.configure(text="Transfer Cancelled")
+                            self.hide_controls()
+                            self.network.on_transfer_progress = original_callback
+                            return
+                    print(f"Failed to send {remote_filename}")
             
             if not self.network.cancel_requested:
                 self.status_label.configure(text=f"Folder Sent! ({total_files} files)")
